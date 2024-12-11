@@ -1,0 +1,4 @@
+beautifulsoup4==4.9.3
+googlesearch-python==1.1.0
+pandas==1.5.3
+requests==2.28.2
