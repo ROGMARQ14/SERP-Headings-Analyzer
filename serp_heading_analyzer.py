@@ -6,18 +6,21 @@ from typing import List, Dict
 from datetime import datetime
 import json
 import os
+import time
 
 class SERPAnalyzer:
-    def __init__(self, query: str, num_results: int = 10):
+    def __init__(self, query: str, num_results: int = 10, delay: float = 2.0):
         """
         Initialize the SERP analyzer
         
         Args:
             query (str): Search query to analyze
             num_results (int): Number of results to fetch (default: 10)
+            delay (float): Delay between requests in seconds (default: 2.0)
         """
         self.query = query
         self.num_results = num_results
+        self.delay = delay
         self.results = []
         
     def get_serp_urls(self) -> List[str]:
@@ -40,7 +43,15 @@ class SERPAnalyzer:
             dict: Dictionary containing extracted elements
         """
         try:
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+            }
+            
+            # Add delay between requests
+            time.sleep(self.delay)
+            
             page = requests.get(url, headers=headers, timeout=10)
             soup = BeautifulSoup(page.text, "html.parser")
             
@@ -49,12 +60,12 @@ class SERPAnalyzer:
                 'url': url,
                 'title': self._get_text(soup.find('title')),
                 'meta_description': self._get_meta_description(soup),
-                'h1': [h.get_text(strip=True) for h in soup.find_all('h1')],
-                'h2': [h.get_text(strip=True) for h in soup.find_all('h2')],
-                'h3': [h.get_text(strip=True) for h in soup.find_all('h3')],
-                'h4': [h.get_text(strip=True) for h in soup.find_all('h4')],
-                'h5': [h.get_text(strip=True) for h in soup.find_all('h5')],
-                'h6': [h.get_text(strip=True) for h in soup.find_all('h6')]
+                'h1': [h.get_text(strip=True) for h in soup.find_all('h1') if h.get_text(strip=True)],
+                'h2': [h.get_text(strip=True) for h in soup.find_all('h2') if h.get_text(strip=True)],
+                'h3': [h.get_text(strip=True) for h in soup.find_all('h3') if h.get_text(strip=True)],
+                'h4': [h.get_text(strip=True) for h in soup.find_all('h4') if h.get_text(strip=True)],
+                'h5': [h.get_text(strip=True) for h in soup.find_all('h5') if h.get_text(strip=True)],
+                'h6': [h.get_text(strip=True) for h in soup.find_all('h6') if h.get_text(strip=True)]
             }
             
             return elements
@@ -69,20 +80,26 @@ class SERPAnalyzer:
 
     def _get_meta_description(self, soup) -> str:
         """Extract meta description from soup"""
-        meta = soup.find('meta', attrs={'name': 'description'})
-        return meta.get('content', '') if meta else ''
+        meta = soup.find('meta', attrs={'name': 'description'}) or soup.find('meta', attrs={'property': 'og:description'})
+        return meta.get('content', '').strip() if meta else ''
 
     def analyze_serp(self) -> List[Dict]:
         """Analyze all SERP results"""
         urls = self.get_serp_urls()
         results = []
         
+        print(f"\nFound {len(urls)} URLs to analyze")
+        print("Starting analysis (this may take a few minutes)...\n")
+        
         for i, url in enumerate(urls, 1):
-            print(f"Analyzing result {i}/{len(urls)}: {url}")
+            print(f"[{i}/{len(urls)}] Analyzing: {url}")
             page_elements = self.extract_page_elements(url)
             if page_elements:
                 page_elements['rank'] = i
                 results.append(page_elements)
+                print(f"✓ Successfully analyzed URL {i}\n")
+            else:
+                print(f"✗ Failed to analyze URL {i}\n")
         
         self.results = results
         return results
@@ -124,19 +141,34 @@ class SERPAnalyzer:
         df = pd.DataFrame(excel_data)
         df.to_excel(excel_path, index=False)
         
-        print(f"Results saved to:")
+        print(f"\nResults saved to:")
         print(f"- JSON: {json_path}")
         print(f"- Excel: {excel_path}")
 
 def main():
-    # Example usage
-    query = input("Enter your search query: ")
-    num_results = int(input("Enter number of results to analyze (default 10): ") or "10")
+    print("SERP Analyzer - Extract headers from top Google search results")
+    print("=" * 60 + "\n")
     
+    # Get user input
+    query = input("Enter your search query: ").strip()
+    while not query:
+        print("Error: Search query cannot be empty")
+        query = input("Enter your search query: ").strip()
+    
+    try:
+        num_results = int(input("Enter number of results to analyze (default 10): ").strip() or "10")
+        if num_results <= 0:
+            print("Invalid number, using default: 10")
+            num_results = 10
+    except ValueError:
+        print("Invalid input, using default: 10")
+        num_results = 10
+    
+    # Create analyzer and run analysis
     analyzer = SERPAnalyzer(query, num_results)
-    print(f"\nAnalyzing top {num_results} results for: {query}")
     analyzer.analyze_serp()
     
+    # Save results
     output_dir = os.path.join(os.path.dirname(__file__), "output")
     analyzer.save_results(output_dir)
 
