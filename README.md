@@ -1,15 +1,18 @@
 # SERP Analyzer
 
-A Python tool to analyze the top Google search results for any query and extract HTML elements like titles, meta descriptions, and headers (H1-H6).
+A Streamlit web application to analyze the top Google search results for any query and extract HTML elements like titles, meta descriptions, and headers (H1-H6).
 
 ## Features
 
+- User-friendly web interface built with Streamlit
 - Fetches top Google search results for any query
 - Extracts page title, meta description, and headers (H1-H6)
 - Saves results in both JSON and Excel formats
 - Includes ranking position for each result
-- Handles errors gracefully with proper error messages
-- User-friendly command line interface
+- Interactive results display with expandable sections
+- Download options for analyzed data
+- Progress tracking during analysis
+- Configurable number of results and request delays
 
 ## Installation
 
@@ -21,20 +24,22 @@ pip install -r requirements.txt
 
 ## Usage
 
-Run the script:
+Run the Streamlit app:
 ```bash
-python serp_analyzer.py
+streamlit run app.py
 ```
 
-The script will prompt you for:
-1. Search query
-2. Number of results to analyze (default: 10)
-
-Results will be saved in the `output` directory in both JSON and Excel formats.
+The web interface will allow you to:
+1. Enter your search query
+2. Set the number of results to analyze
+3. Configure delay between requests
+4. View analysis progress in real-time
+5. Download results in JSON or Excel format
+6. View detailed analysis with expandable sections
 
 ## Output Format
 
-The tool generates two files for each analysis:
+The tool generates two downloadable files for each analysis:
 1. JSON file with detailed structured data
 2. Excel file with formatted results for easy viewing
 
@@ -47,7 +52,7 @@ Each result includes:
 
 ## Error Handling
 
-The script includes robust error handling for:
+The application includes robust error handling for:
 - Network issues
 - Invalid URLs
 - Timeout errors
